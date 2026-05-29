@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Climbing Log">
+<title>Climbing Log</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0f11;
+    --surface: #16181c;
+    --surface2: #1e2128;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.13);
+    --text: #f0f0ee;
+    --muted: #6b6f7a;
+    --accent: #c8f060;
+    --accent-dim: rgba(200,240,96,0.12);
+    --accent-dark: #8fab2e;
+    --danger: #f06060;
+    --warn: #f0b060;
+    --radius: 14px;
+    --radius-sm: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: env(safe-area-inset-top, 0) env(safe-area-inset-right, 0) env(safe-area-inset-bottom, 0) env(safe-area-inset-left, 0);
+  }
+
+  .app {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 0 0 100px;
+  }
+
+  /* Header */
+  .header {
+    padding: 28px 20px 0;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+  .header-title {
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+  .header-date {
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    color: var(--muted);
+    text-align: right;
+  }
+  .header-name {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-top: 4px;
+    line-height: 1.1;
+  }
+  .accent { color: var(--accent); }
+
+  /* Tab bar */
+  .tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin: 24px 20px 0;
+  }
+  .tab {
+    padding: 12px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--muted);
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+  }
+  .tab.active {
+    background: var(--accent-dim);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .tab-hint {
+    display: block;
+    font-size: 10px;
+    font-weight: 400;
+    font-family: 'DM Mono', monospace;
+    color: inherit;
+    opacity: 0.6;
+    margin-top: 2px;
+    letter-spacing: 0;
+  }
+
+  /* Sections */
+  .section { padding: 20px; display: none; }
+  .section.active { display: block; }
+
+  .section-label {
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    margin-bottom: 10px;
+  }
+
+  /* Card */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+    margin-bottom: 12px;
+  }
+
+  /* Wellness rows */
+  .w-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .w-row:last-child { border-bottom: none; padding-bottom: 0; }
+  .w-row:first-child { padding-top: 0; }
+  .w-label {
+    font-size: 13px;
+    color: var(--text);
+    font-weight: 600;
+  }
+  .w-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .pips {
+    display: flex;
+    gap: 4px;
+  }
+  .pip {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border2);
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    font-family: 'DM Mono', monospace;
+    color: var(--muted);
+  }
+  .pip.active-1, .pip.active-2 { border-color: var(--danger); background: rgba(240,96,96,0.18); color: var(--danger); }
+  .pip.active-3 { border-color: var(--warn); background: rgba(240,176,96,0.18); color: var(--warn); }
+  .pip.active-4, .pip.active-5 { border-color: var(--accent); background: var(--accent-dim); color: var(--accent); }
+  .w-val {
+    font-size: 15px;
+    font-weight: 600;
+    font-family: 'DM Mono', monospace;
+    min-width: 16px;
+    text-align: right;
+    color: var(--text);
+  }
+
+  /* Total bar */
+  .total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 18px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    margin-bottom: 12px;
+  }
+  .total-label { font-size: 12px; color: var(--muted); font-family: 'DM Mono', monospace; }
+  .total-value { font-size: 22px; font-weight: 700; font-family: 'DM Mono', monospace; }
+  .total-max { font-size: 12px; color: var(--muted); }
+
+  /* RPE */
+  .rpe-display {
+    text-align: center;
+    padding: 12px 0 18px;
+  }
+  .rpe-number {
+    font-size: 72px;
+    font-weight: 700;
+    font-family: 'DM Mono', monospace;
+    line-height: 1;
+    color: var(--accent);
+  }
+  .rpe-label {
+    font-size: 14px;
+    color: var(--muted);
+    margin-top: 6px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  input[type=range] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 4px;
+    background: var(--border2);
+    border-radius: 2px;
+    outline: none;
+    margin: 8px 0;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    box-shadow: 0 0 0 4px var(--accent-dim);
+  }
+  .range-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    font-family: 'DM Mono', monospace;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  /* Notes */
+  textarea {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    padding: 12px;
+    resize: none;
+    outline: none;
+    transition: border-color 0.2s;
+    min-height: 70px;
+  }
+  textarea:focus { border-color: var(--border2); }
+  textarea::placeholder { color: var(--muted); }
+
+  /* Submit button */
+  .submit-btn {
+    width: 100%;
+    padding: 16px;
+    background: var(--accent);
+    color: #0e0f11;
+    border: none;
+    border-radius: var(--radius);
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 4px;
+  }
+  .submit-btn:active { transform: scale(0.97); background: var(--accent-dark); }
+  .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  /* Feedback */
+  .feedback {
+    text-align: center;
+    font-size: 13px;
+    font-family: 'DM Mono', monospace;
+    margin-top: 10px;
+    min-height: 20px;
+    transition: opacity 0.3s;
+  }
+  .feedback.ok { color: var(--accent); }
+  .feedback.err { color: var(--danger); }
+
+  /* Status badge */
+  .status-badge {
+    display: inline-block;
+    font-size: 10px;
+    font-family: 'DM Mono', monospace;
+    font-weight: 500;
+    padding: 3px 10px;
+    border-radius: 99px;
+    letter-spacing: 0.06em;
+  }
+  .badge-green { background: rgba(200,240,96,0.15); color: var(--accent); border: 1px solid rgba(200,240,96,0.3); }
+  .badge-amber { background: rgba(240,176,96,0.15); color: var(--warn); border: 1px solid rgba(240,176,96,0.3); }
+  .badge-red   { background: rgba(240,96,96,0.15);  color: var(--danger); border: 1px solid rgba(240,96,96,0.3); }
+
+  /* History */
+  .hist-entry {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 8px;
+  }
+  .hist-date { font-size: 11px; font-family: 'DM Mono', monospace; color: var(--muted); margin-bottom: 3px; }
+  .hist-vals { font-size: 13px; font-weight: 600; }
+  .hist-notes { font-size: 11px; font-family: 'DM Mono', monospace; color: var(--muted); margin-top: 2px; }
+  .empty-state { text-align: center; padding: 40px 0; color: var(--muted); font-size: 13px; font-family: 'DM Mono', monospace; }
+
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 6px 0 16px;
+  }
+
+  /* Spinner */
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border: 2px solid rgba(14,15,17,0.3);
+    border-top-color: #0e0f11;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+
+  /* Page load animation */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .header { animation: fadeUp 0.4s ease both; }
+  .tabs   { animation: fadeUp 0.4s ease 0.08s both; }
+  .section { animation: fadeUp 0.3s ease both; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="header">
+    <div>
+      <div class="header-title">Climbing Log</div>
+      <div class="header-name">Sesión de<br><span class="accent">escalada</span></div>
+    </div>
+    <div class="header-date" id="header-date"></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('pre')" id="tab-pre">
+      PRE
+      <span class="tab-hint">antes de entrenar</span>
+    </button>
+    <button class="tab" onclick="switchTab('post')" id="tab-post">
+      POST
+      <span class="tab-hint">al finalizar</span>
+    </button>
+  </div>
+
+  <!-- PRE: Wellness -->
+  <div class="section active" id="sec-pre">
+    <div class="section-label">Wellness score — bienestar</div>
+    <div class="card" id="wellness-card"></div>
+
+    <div class="total-row">
+      <span class="total-label">Total wellness</span>
+      <span>
+        <span class="total-value" id="w-total">32</span>
+        <span class="total-max"> / 40</span>
+      </span>
+    </div>
+
+    <button class="submit-btn" id="btn-pre" onclick="submitWellness()">
+      Registrar bienestar
+    </button>
+    <div class="feedback" id="fb-pre"></div>
+
+    <div style="margin-top:20px">
+      <div class="section-label">Historial wellness</div>
+      <div id="hist-wellness"><div class="empty-state">Sin registros aún</div></div>
+    </div>
+  </div>
+
+  <!-- POST: RPE -->
+  <div class="section" id="sec-post">
+    <div class="section-label">RPE — esfuerzo percibido</div>
+    <div class="card">
+      <div class="rpe-display">
+        <div class="rpe-number" id="rpe-num">5</div>
+        <div class="rpe-label" id="rpe-lbl">Esfuerzo moderado</div>
+      </div>
+      <input type="range" min="1" max="10" value="5" step="1"
+        id="rpe-slider" oninput="updateRpe(this.value)">
+      <div class="range-labels"><span>1 — muy fácil</span><span>10 — máximo</span></div>
+    </div>
+
+    <div class="section-label" style="margin-top:4px">Notas (opcional)</div>
+    <textarea id="rpe-notes" placeholder="ej: proyecté 6c, buen agarre hoy..."></textarea>
+
+    <button class="submit-btn" id="btn-post" onclick="submitRpe()" style="margin-top:12px">
+      Registrar RPE
+    </button>
+    <div class="feedback" id="fb-post"></div>
+
+    <div style="margin-top:20px">
+      <div class="section-label">Historial RPE</div>
+      <div id="hist-rpe"><div class="empty-state">Sin registros aún</div></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const WELLNESS_URL = 'https://script.google.com/macros/s/AKfycbzqgfmSp1kNfYzkr7-TLVlQGFtrl_Qcxh1fbOF5tQjdrP3QztywlqihGhvdk2Iw52KHhA/exec';
+const RPE_URL      = 'https://script.google.com/macros/s/AKfycby74GC-VoO_y3-xUJhE-5DAJlgTxOY9E8pivxuwXNN8jdmwnZnQrBKAdzJCSErdwfo5Pg/exec';
+
+const WELLNESS_VARS = [
+  { key: 'sueno_calidad', label: 'Sueño (calidad)' },
+  { key: 'sueno_horas',   label: 'Sueño (horas)'   },
+  { key: 'dolor',         label: 'Dolor muscular'   },
+  { key: 'fatiga',        label: 'Fatiga general'   },
+  { key: 'estres',        label: 'Estrés'           },
+  { key: 'animo',         label: 'Ánimo'            },
+  { key: 'apetito',       label: 'Apetito'          },
+  { key: 'motivacion',    label: 'Motivación'       },
+];
+
+const RPE_LABELS = {
+  1:'Recuperación activa', 2:'Muy fácil', 3:'Fácil', 4:'Moderado-fácil',
+  5:'Esfuerzo moderado',   6:'Algo duro', 7:'Duro',  8:'Muy duro',
+  9:'Casi máximo',         10:'Esfuerzo máximo'
+};
+
+const wVals = {};
+WELLNESS_VARS.forEach(v => wVals[v.key] = 4);
+
+/* ── Date ── */
+function todayStr() {
+  return new Date().toLocaleDateString('es-CL', { day:'2-digit', month:'2-digit', year:'2-digit' });
+}
+function todayFull() {
+  return new Date().toLocaleDateString('es-CL', { weekday:'short', day:'numeric', month:'short' });
+}
+document.getElementById('header-date').innerHTML = todayFull().replace(',','<br>');
+
+/* ── Tabs ── */
+function switchTab(tab) {
+  ['pre','post'].forEach(t => {
+    document.getElementById('sec-' + t).classList.toggle('active', t === tab);
+    document.getElementById('tab-' + t).classList.toggle('active', t === tab);
+  });
+  if (tab === 'pre')  renderHistWellness();
+  if (tab === 'post') renderHistRpe();
+}
+
+/* ── Wellness builder ── */
+function buildWellness() {
+  const card = document.getElementById('wellness-card');
+  card.innerHTML = '';
+  WELLNESS_VARS.forEach((v, idx) => {
+    const row = document.createElement('div');
+    row.className = 'w-row';
+    const lbl = document.createElement('span');
+    lbl.className = 'w-label';
+    lbl.textContent = v.label;
+    const right = document.createElement('div');
+    right.className = 'w-right';
+    const pips = document.createElement('div');
+    pips.className = 'pips';
+    for (let i = 1; i <= 5; i++) {
+      const pip = document.createElement('button');
+      pip.className = 'pip';
+      pip.textContent = i;
+      pip.setAttribute('aria-label', v.label + ' ' + i);
+      pip.onclick = () => setPip(v.key, i);
+      pip.id = 'pip-' + v.key + '-' + i;
+      pips.appendChild(pip);
+    }
+    const val = document.createElement('span');
+    val.className = 'w-val';
+    val.id = 'wv-' + v.key;
+    val.textContent = wVals[v.key];
+    right.appendChild(pips);
+    right.appendChild(val);
+    row.appendChild(lbl);
+    row.appendChild(right);
+    card.appendChild(row);
+  });
+  refreshPips();
+}
+
+function setPip(key, val) {
+  wVals[key] = val;
+  document.getElementById('wv-' + key).textContent = val;
+  refreshPips();
+  updateWTotal();
+}
+
+function refreshPips() {
+  WELLNESS_VARS.forEach(v => {
+    for (let i = 1; i <= 5; i++) {
+      const pip = document.getElementById('pip-' + v.key + '-' + i);
+      pip.className = 'pip' + (i <= wVals[v.key] ? ' active-' + wVals[v.key] : '');
+    }
+  });
+}
+
+function wTotal() { return WELLNESS_VARS.reduce((s, v) => s + wVals[v.key], 0); }
+
+function updateWTotal() {
+  const t = wTotal();
+  const el = document.getElementById('w-total');
+  el.textContent = t;
+  el.style.color = t >= 32 ? 'var(--accent)' : t >= 24 ? 'var(--warn)' : 'var(--danger)';
+}
+
+/* ── RPE ── */
+function updateRpe(v) {
+  document.getElementById('rpe-num').textContent = v;
+  document.getElementById('rpe-lbl').textContent = RPE_LABELS[v];
+  const el = document.getElementById('rpe-num');
+  el.style.color = v <= 4 ? 'var(--accent)' : v <= 7 ? 'var(--warn)' : 'var(--danger)';
+}
+
+/* ── Submit helpers ── */
+function setFeedback(id, msg, type) {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.className = 'feedback ' + type;
+  if (type === 'ok') setTimeout(() => { el.textContent = ''; el.className = 'feedback'; }, 3000);
+}
+
+function setLoading(btnId, loading) {
+  const btn = document.getElementById(btnId);
+  if (loading) {
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Guardando...';
+  } else {
+    btn.disabled = false;
+  }
+}
+
+async function postToSheets(url, row) {
+  const res = await fetch(url, {
+    method: 'POST',
+    body: JSON.stringify({ row }),
+    headers: { 'Content-Type': 'application/json' }
+  });
+  return res.json();
+}
+
+/* ── Submit wellness ── */
+async function submitWellness() {
+  setLoading('btn-pre', true);
+  setFeedback('fb-pre', '', '');
+  const today = todayStr();
+  const vals = WELLNESS_VARS.map(v => wVals[v.key]);
+  const total = wTotal();
+  const row = [today, ...vals, total];
+  try {
+    await postToSheets(WELLNESS_URL, row);
+    document.getElementById('btn-pre').textContent = 'Registrar bienestar';
+    document.getElementById('btn-pre').disabled = false;
+    setFeedback('fb-pre', '✓ Guardado en Google Sheets', 'ok');
+    saveLocal('hist_wellness', { date: today, vals, total });
+    renderHistWellness();
+  } catch(e) {
+    document.getElementById('btn-pre').textContent = 'Registrar bienestar';
+    document.getElementById('btn-pre').disabled = false;
+    setFeedback('fb-pre', '✗ Error al guardar. Revisa conexión.', 'err');
+  }
+}
+
+/* ── Submit RPE ── */
+async function submitRpe() {
+  setLoading('btn-post', true);
+  setFeedback('fb-post', '', '');
+  const today = todayStr();
+  const rpe = parseInt(document.getElementById('rpe-slider').value);
+  const notes = document.getElementById('rpe-notes').value.trim();
+  const row = [today, rpe, notes];
+  try {
+    await postToSheets(RPE_URL, row);
+    document.getElementById('btn-post').textContent = 'Registrar RPE';
+    document.getElementById('btn-post').disabled = false;
+    setFeedback('fb-post', '✓ Guardado en Google Sheets', 'ok');
+    saveLocal('hist_rpe', { date: today, rpe, notes });
+    renderHistRpe();
+  } catch(e) {
+    document.getElementById('btn-post').textContent = 'Registrar RPE';
+    document.getElementById('btn-post').disabled = false;
+    setFeedback('fb-post', '✗ Error al guardar. Revisa conexión.', 'err');
+  }
+}
+
+/* ── Local history ── */
+function saveLocal(key, entry) {
+  const arr = JSON.parse(localStorage.getItem(key) || '[]');
+  arr.unshift(entry);
+  localStorage.setItem(key, JSON.stringify(arr.slice(0, 30)));
+}
+
+function wBadge(total) {
+  if (total >= 32) return '<span class="status-badge badge-green">Óptimo</span>';
+  if (total >= 24) return '<span class="status-badge badge-amber">Regular</span>';
+  return '<span class="status-badge badge-red">Bajo</span>';
+}
+
+function renderHistWellness() {
+  const arr = JSON.parse(localStorage.getItem('hist_wellness') || '[]');
+  const el = document.getElementById('hist-wellness');
+  if (!arr.length) { el.innerHTML = '<div class="empty-state">Sin registros aún</div>'; return; }
+  el.innerHTML = arr.map(e => `
+    <div class="hist-entry">
+      <div>
+        <div class="hist-date">${e.date}</div>
+        <div class="hist-vals">Wellness: ${e.total} / 40</div>
+      </div>
+      ${wBadge(e.total)}
+    </div>`).join('');
+}
+
+function renderHistRpe() {
+  const arr = JSON.parse(localStorage.getItem('hist_rpe') || '[]');
+  const el = document.getElementById('hist-rpe');
+  if (!arr.length) { el.innerHTML = '<div class="empty-state">Sin registros aún</div>'; return; }
+  el.innerHTML = arr.map(e => `
+    <div class="hist-entry">
+      <div>
+        <div class="hist-date">${e.date}</div>
+        <div class="hist-vals">RPE ${e.rpe} / 10 — ${RPE_LABELS[e.rpe]}</div>
+        ${e.notes ? `<div class="hist-notes">${e.notes}</div>` : ''}
+      </div>
+      <span class="status-badge ${e.rpe <= 4 ? 'badge-green' : e.rpe <= 7 ? 'badge-amber' : 'badge-red'}">${e.rpe}</span>
+    </div>`).join('');
+}
+
+/* ── Init ── */
+buildWellness();
+updateWTotal();
+updateRpe(5);
+renderHistWellness();
+</script>
+</body>
+</html>
