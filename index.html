@@ -412,6 +412,25 @@
       <div class="range-labels"><span>1 — muy fácil</span><span>10 — máximo</span></div>
     </div>
 
+    <div class="section-label" style="margin-top:4px">Duración de la sesión</div>
+    <div class="card">
+      <div class="rpe-display">
+        <div class="rpe-number" id="dur-num">1.0<span style="font-size:32px">h</span></div>
+        <div class="rpe-label" id="dur-lbl">Factor ×1.0</div>
+      </div>
+      <input type="range" min="0.5" max="6" value="1" step="0.1"
+        id="dur-slider" oninput="updateDuration(this.value)">
+      <div class="range-labels"><span>0.5 h</span><span>6 h</span></div>
+    </div>
+
+    <div class="total-row" style="margin-top:12px">
+      <span class="total-label">Carga de sesión</span>
+      <span>
+        <span class="total-value" id="carga-val">5.0</span>
+        <span class="total-max"> AU</span>
+      </span>
+    </div>
+
     <div class="section-label" style="margin-top:4px">Notas (opcional)</div>
     <textarea id="rpe-notes" placeholder="ej: proyecté 6c, buen agarre hoy..."></textarea>
 
@@ -538,6 +557,28 @@ function updateRpe(v) {
   document.getElementById('rpe-lbl').textContent = RPE_LABELS[v];
   const el = document.getElementById('rpe-num');
   el.style.color = v <= 4 ? 'var(--accent)' : v <= 7 ? 'var(--warn)' : 'var(--danger)';
+  updateCarga();
+}
+
+/* ── Duración / carga de sesión ── */
+function updateDuration(v) {
+  const h = parseFloat(v).toFixed(1);
+  document.getElementById('dur-num').innerHTML = h + '<span style="font-size:32px">h</span>';
+  document.getElementById('dur-lbl').textContent = 'Factor ×' + h;
+  updateCarga();
+}
+
+function cargaValue() {
+  const rpe   = parseInt(document.getElementById('rpe-slider').value);
+  const horas = parseFloat(document.getElementById('dur-slider').value);
+  return Math.round(rpe * horas * 10) / 10;
+}
+
+function updateCarga() {
+  const c = cargaValue();
+  const el = document.getElementById('carga-val');
+  el.textContent = c.toFixed(1);
+  el.style.color = c <= 15 ? 'var(--accent)' : c <= 35 ? 'var(--warn)' : 'var(--danger)';
 }
 
 /* ── Submit helpers ── */
@@ -591,14 +632,18 @@ async function submitRpe() {
   setFeedback('fb-post', '', '');
   const today = todayStr();
   const rpe = parseInt(document.getElementById('rpe-slider').value);
+  const horas = parseFloat(document.getElementById('dur-slider').value);
+  const carga = cargaValue();
   const notes = document.getElementById('rpe-notes').value.trim();
-  const row = [today, rpe, notes];
+  // Columnas nuevas al final para no desalinear filas históricas:
+  // Fecha | RPE | Notas | Duración(h) | Carga
+  const row = [today, rpe, notes, horas, carga];
   try {
     await postToSheets(RPE_URL, row);
     document.getElementById('btn-post').textContent = 'Registrar RPE';
     document.getElementById('btn-post').disabled = false;
     setFeedback('fb-post', '✓ Guardado en Google Sheets', 'ok');
-    saveLocal('hist_rpe', { date: today, rpe, notes });
+    saveLocal('hist_rpe', { date: today, rpe, horas, carga, notes });
     renderHistRpe();
   } catch(e) {
     document.getElementById('btn-post').textContent = 'Registrar RPE';
@@ -643,6 +688,7 @@ function renderHistRpe() {
       <div>
         <div class="hist-date">${e.date}</div>
         <div class="hist-vals">RPE ${e.rpe} / 10 — ${RPE_LABELS[e.rpe]}</div>
+        ${e.carga != null ? `<div class="hist-notes">${(+e.horas).toFixed(1)} h · carga ${(+e.carga).toFixed(1)} AU</div>` : ''}
         ${e.notes ? `<div class="hist-notes">${e.notes}</div>` : ''}
       </div>
       <span class="status-badge ${e.rpe <= 4 ? 'badge-green' : e.rpe <= 7 ? 'badge-amber' : 'badge-red'}">${e.rpe}</span>
@@ -653,6 +699,7 @@ function renderHistRpe() {
 buildWellness();
 updateWTotal();
 updateRpe(5);
+updateDuration(1);
 renderHistWellness();
 </script>
 </body>
