@@ -244,6 +244,40 @@
     margin-top: 4px;
   }
 
+  /* Date bar */
+  .datebar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 16px 20px 0;
+    padding: 10px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+  }
+  .date-label {
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+  input[type=date] {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    padding: 8px 10px;
+    outline: none;
+  }
+  input[type=date]::-webkit-calendar-picker-indicator {
+    filter: invert(0.65);
+    cursor: pointer;
+  }
+
   /* Notes */
   textarea {
     width: 100%;
@@ -375,6 +409,11 @@
     </button>
   </div>
 
+  <div class="datebar">
+    <label class="date-label" for="entry-date">Fecha del registro</label>
+    <input type="date" id="entry-date">
+  </div>
+
   <!-- PRE: Wellness -->
   <div class="section active" id="sec-pre">
     <div class="section-label">Wellness score — bienestar</div>
@@ -472,13 +511,26 @@ const wVals = {};
 WELLNESS_VARS.forEach(v => wVals[v.key] = 4);
 
 /* ── Date ── */
-function todayStr() {
-  return new Date().toLocaleDateString('es-CL', { day:'2-digit', month:'2-digit', year:'2-digit' });
+function formatDateCL(d) {
+  return d.toLocaleDateString('es-CL', { day:'2-digit', month:'2-digit', year:'2-digit' });
+}
+function todayStr() { return formatDateCL(new Date()); }
+function todayISO() {
+  const d = new Date(), p = n => String(n).padStart(2, '0');
+  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+}
+// Fecha elegida en el input (ISO yyyy-mm-dd) → mismo formato que usa el Sheet.
+function entryDateStr() {
+  const iso = document.getElementById('entry-date').value;
+  if (!iso) return todayStr();
+  const [y, m, d] = iso.split('-').map(Number);
+  return formatDateCL(new Date(y, m - 1, d));   // construye en hora local, sin corrimiento de zona
 }
 function todayFull() {
   return new Date().toLocaleDateString('es-CL', { weekday:'short', day:'numeric', month:'short' });
 }
 document.getElementById('header-date').innerHTML = todayFull().replace(',','<br>');
+document.getElementById('entry-date').value = todayISO();
 
 /* ── Tabs ── */
 function switchTab(tab) {
@@ -608,7 +660,7 @@ async function postToSheets(url, row) {
 async function submitWellness() {
   setLoading('btn-pre', true);
   setFeedback('fb-pre', '', '');
-  const today = todayStr();
+  const today = entryDateStr();
   const vals = WELLNESS_VARS.map(v => wVals[v.key]);
   const total = wTotal();
   const row = [today, ...vals, total];
@@ -630,7 +682,7 @@ async function submitWellness() {
 async function submitRpe() {
   setLoading('btn-post', true);
   setFeedback('fb-post', '', '');
-  const today = todayStr();
+  const today = entryDateStr();
   const rpe = parseInt(document.getElementById('rpe-slider').value);
   const horas = parseFloat(document.getElementById('dur-slider').value);
   const carga = cargaValue();
