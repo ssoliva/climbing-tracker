@@ -216,6 +216,11 @@
     margin-top: 6px;
     font-family: 'DM Mono', monospace;
   }
+  /* La duración puede ser larga ("2 h 30 min"): más chica y en una línea. */
+  #dur-num {
+    font-size: 46px;
+    white-space: nowrap;
+  }
 
   input[type=range] {
     -webkit-appearance: none;
@@ -454,12 +459,12 @@
     <div class="section-label" style="margin-top:4px">Duración de la sesión</div>
     <div class="card">
       <div class="rpe-display">
-        <div class="rpe-number" id="dur-num">1.0<span style="font-size:32px">h</span></div>
-        <div class="rpe-label" id="dur-lbl">Factor ×1.0</div>
+        <div class="rpe-number" id="dur-num">1 h</div>
+        <div class="rpe-label" id="dur-lbl">Factor ×1.00</div>
       </div>
-      <input type="range" min="0.5" max="6" value="1" step="0.1"
+      <input type="range" min="30" max="360" value="60" step="10"
         id="dur-slider" oninput="updateDuration(this.value)">
-      <div class="range-labels"><span>0.5 h</span><span>6 h</span></div>
+      <div class="range-labels"><span>30 min</span><span>6 h</span></div>
     </div>
 
     <div class="total-row" style="margin-top:12px">
@@ -613,16 +618,24 @@ function updateRpe(v) {
 }
 
 /* ── Duración / carga de sesión ── */
+// El slider trabaja en minutos (paso 10); la carga se calcula en horas.
+function fmtDur(min) {
+  const h = Math.floor(min / 60), m = min % 60;
+  if (h && m) return h + ' h ' + m + ' min';
+  if (h)      return h + ' h';
+  return m + ' min';
+}
+
 function updateDuration(v) {
-  const h = parseFloat(v).toFixed(1);
-  document.getElementById('dur-num').innerHTML = h + '<span style="font-size:32px">h</span>';
-  document.getElementById('dur-lbl').textContent = 'Factor ×' + h;
+  const min = parseInt(v);
+  document.getElementById('dur-num').innerHTML = fmtDur(min);
+  document.getElementById('dur-lbl').textContent = 'Factor ×' + (min / 60).toFixed(2);
   updateCarga();
 }
 
 function cargaValue() {
   const rpe   = parseInt(document.getElementById('rpe-slider').value);
-  const horas = parseFloat(document.getElementById('dur-slider').value);
+  const horas = parseInt(document.getElementById('dur-slider').value) / 60;
   return Math.round(rpe * horas * 10) / 10;
 }
 
@@ -684,7 +697,7 @@ async function submitRpe() {
   setFeedback('fb-post', '', '');
   const today = entryDateStr();
   const rpe = parseInt(document.getElementById('rpe-slider').value);
-  const horas = parseFloat(document.getElementById('dur-slider').value);
+  const horas = parseInt(document.getElementById('dur-slider').value) / 60;
   const carga = cargaValue();
   const notes = document.getElementById('rpe-notes').value.trim();
   // Columnas nuevas al final para no desalinear filas históricas:
@@ -740,7 +753,7 @@ function renderHistRpe() {
       <div>
         <div class="hist-date">${e.date}</div>
         <div class="hist-vals">RPE ${e.rpe} / 10 — ${RPE_LABELS[e.rpe]}</div>
-        ${e.carga != null ? `<div class="hist-notes">${(+e.horas).toFixed(1)} h · carga ${(+e.carga).toFixed(1)} AU</div>` : ''}
+        ${e.carga != null ? `<div class="hist-notes">${fmtDur(Math.round(+e.horas * 60))} · carga ${(+e.carga).toFixed(1)} AU</div>` : ''}
         ${e.notes ? `<div class="hist-notes">${e.notes}</div>` : ''}
       </div>
       <span class="status-badge ${e.rpe <= 4 ? 'badge-green' : e.rpe <= 7 ? 'badge-amber' : 'badge-red'}">${e.rpe}</span>
@@ -751,7 +764,7 @@ function renderHistRpe() {
 buildWellness();
 updateWTotal();
 updateRpe(5);
-updateDuration(1);
+updateDuration(60);
 renderHistWellness();
 </script>
 </body>
